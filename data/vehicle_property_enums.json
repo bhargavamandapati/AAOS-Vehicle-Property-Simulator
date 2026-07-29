@@ -1,0 +1,39 @@
+{
+  "_comment": "Best-effort DISPLAY-ONLY decode tables for common enum-valued vehicle properties, keyed by property name. These are based on the public android.car VHAL enum constants but may not match every Android version / OEM build exactly - verify against your target device/VHAL and edit freely. They never affect what gets sent to the device: Set/Inject operations always transmit exactly the value you enter or pick.",
+  "GEAR_SELECTION": {
+    "1": "PARK", "2": "REVERSE", "4": "NEUTRAL", "8": "DRIVE",
+    "16": "GEAR_1", "32": "GEAR_2", "64": "GEAR_3", "128": "GEAR_4",
+    "256": "GEAR_5", "512": "GEAR_6", "1024": "GEAR_7", "2048": "GEAR_8", "4096": "GEAR_9"
+  },
+  "CURRENT_GEAR": {
+    "1": "PARK", "2": "REVERSE", "4": "NEUTRAL", "8": "DRIVE"
+  },
+  "IGNITION_STATE": {
+    "0": "UNDEFINED", "1": "LOCK", "2": "OFF", "3": "ACC", "4": "ON", "5": "START"
+  },
+  "TURN_SIGNAL_STATE": {
+    "0": "NONE", "1": "RIGHT", "2": "LEFT"
+  },
+  "HVAC_FAN_DIRECTION": {
+    "0": "FACE", "1": "FLOOR", "2": "FACE_AND_FLOOR", "4": "DEFROST",
+    "5": "FACE_AND_DEFROST", "6": "FLOOR_AND_DEFROST", "7": "FLOOR_FACE_DEFROST"
+  },
+  "HEADLIGHTS_STATE": {"0": "OFF", "1": "ON", "2": "DAYTIME_RUNNING"},
+  "HEADLIGHTS_SWITCH": {"0": "OFF", "1": "ON", "2": "DAYTIME_RUNNING", "3": "AUTO"},
+  "HIGH_BEAM_LIGHTS_STATE": {"0": "OFF", "1": "ON"},
+  "HIGH_BEAM_LIGHTS_SWITCH": {"0": "OFF", "1": "ON", "3": "AUTO"},
+  "FOG_LIGHTS_STATE": {"0": "OFF", "1": "ON"},
+  "FOG_LIGHTS_SWITCH": {"0": "OFF", "1": "ON", "3": "AUTO"},
+  "FRONT_FOG_LIGHTS_STATE": {"0": "OFF", "1": "ON"},
+  "FRONT_FOG_LIGHTS_SWITCH": {"0": "OFF", "1": "ON", "3": "AUTO"},
+  "REAR_FOG_LIGHTS_STATE": {"0": "OFF", "1": "ON"},
+  "REAR_FOG_LIGHTS_SWITCH": {"0": "OFF", "1": "ON", "3": "AUTO"},
+  "CABIN_LIGHTS_STATE": {"0": "OFF", "1": "ON", "2": "DAYTIME_RUNNING"},
+  "CABIN_LIGHTS_SWITCH": {"0": "OFF", "1": "ON", "2": "DAYTIME_RUNNING", "3": "AUTO"},
+  "READING_LIGHTS_STATE": {"0": "OFF", "1": "ON"},
+  "READING_LIGHTS_SWITCH": {"0": "OFF", "1": "ON", "3": "AUTO"},
+  "HVAC_TEMPERATURE_DISPLAY_UNITS": {"48": "CELSIUS", "49": "FAHRENHEIT"},
+  "DISTANCE_DISPLAY_UNITS": {"1": "MILLIMETER", "2": "METER", "3": "KILOMETER", "4": "MILE"},
+  "EV_STOPPING_MODE": {"1": "CREEP", "2": "ROLL", "3": "HOLD"},
+  "VEHICLE_CURB_WEIGHT": {}
+}
