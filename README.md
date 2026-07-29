@@ -7,6 +7,67 @@ every property the connected device supports, watch filtered/colored
 (via [ttkbootstrap](https://ttkbootstrap.readthedocs.io/)) so it runs the
 same way on Windows and Linux.
 
+## Screenshots
+
+<table>
+<tr>
+<td width="50%">
+
+**Dashboard** — quick controls for the most common properties, greyed
+out automatically when the connected device doesn't support them.
+<img src="screenshots/Dashboard.png" alt="Dashboard tab">
+</td>
+<td width="50%">
+
+**All Properties** — full property browser: search/filter, area &
+value-type-aware editor, live ADB command preview, multi-format export.
+<img src="screenshots/Vehicle Properties.png" alt="All Properties tab">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Logcat Console** — filtered, color-coded log streaming with
+continuous on-disk logging.
+<img src="screenshots/Logcat.png" alt="Logcat Console tab">
+</td>
+<td width="50%">
+
+**Testing** — scenario runner, snapshot diff, live property monitor,
+raw ADB shell, and the ADB request/response Command Log.
+<img src="screenshots/Testing.png" alt="Testing tab">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Screenshot** — capture the device's display, preview it, save
+full-resolution PNGs, or enable a live-refreshing preview.
+<img src="screenshots/Device Screenshot.png" alt="Screenshot tab">
+</td>
+<td width="50%">
+
+**Processes** — live process list with RSS/VSZ memory, and a full
+`dumpsys meminfo` breakdown for whichever process is selected.
+<img src="screenshots/Process Monitor.png" alt="Processes tab">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Settings** — ADB path override, theme picker, editable command
+templates, performance/buffer tuning, and quick links to config/log
+folders.
+<img src="screenshots/settings.png" alt="Settings tab">
+</td>
+<td width="50%">
+
+See [docs/](docs/) for the full architecture, functionality, and
+internal working-process writeups.
+</td>
+</tr>
+</table>
+
 ## Features
 
 - **Device connection bar** - detects `adb`, scans for devices, and gives
@@ -144,22 +205,40 @@ defensively around that fact:
 - When something doesn't work as expected, the **Testing → Raw ADB Shell**
   panel lets you run any `adb shell` command directly for troubleshooting.
 
+## Documentation
+
+For more depth than this README, see **[docs/](docs/)**:
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - module layout, core
+  objects, the threading model, and a data-flow diagram.
+- [docs/FUNCTIONALITY.md](docs/FUNCTIONALITY.md) - a detailed
+  walkthrough of every tab.
+- [docs/WORKING_PROCESS.md](docs/WORKING_PROCESS.md) - the internals:
+  how property discovery actually parses `dumpsys`, why live values
+  need a second call, the logcat/logging pipelines, and the defensive
+  design decisions behind all of it.
+
 ## Project layout
 
 ```
 main.py                     entry point
 app/
-  adb_manager.py            adb discovery, device scan, shell exec, logcat streaming
+  adb_manager.py            adb discovery, device scan, shell exec, logcat streaming, screenshot capture
   car_service.py             dumpsys car_service parsing + get/set/inject commands
   property_registry.py       curated "known" properties for the Dashboard (matched by name)
+  device_tools.py             ps / dumpsys meminfo parsing for the Processes tab
+  export_utils.py             shared CSV/JSON/XML/HTML/Excel exporter
+  command_log.py              in-memory ADB request/response log (Testing -> Command Log)
+  persistent_log.py           continuous rotating file logs (adb commands + logcat)
   config.py                   persistent settings (JSON, under the OS user config dir)
   gui/
     main_window.py            top bar (device selector) + tab notebook + status bar
     context.py                 shared app state passed to every tab
-    tabs/                      dashboard, properties, logcat, testing, settings
-  utils/workers.py             background-thread helpers (never block the Tk main thread)
+    tabs/                      dashboard, properties, logcat, testing, screenshot, processes, settings
+  utils/                       background-thread helpers + small filesystem helpers
 data/vehicle_property_enums.json   best-effort enum decode table (editable)
 tests/                        unit tests for the parsers/managers (no device/adb required)
+docs/                         architecture, functionality, and working-process documentation
 ```
 
 ## Running the tests
@@ -169,9 +248,14 @@ pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-The test suite covers the `dumpsys` parser, the device-list parser, and
+The test suite covers every parser and exporter (`dumpsys` output, the
+device list, `ps`/`dumpsys meminfo`, `get-property-value` responses,
+CSV/JSON/XML/HTML/Excel export, the area/value decoration helpers) and
 the Dashboard's name-based matching logic - all pure functions, so no
-adb binary or attached device is required to run them.
+adb binary or attached device is required to run them. Several fixtures
+are captured verbatim from a real AAOS emulator rather than invented, to
+validate against real device output rather than against the regexes'
+own assumptions.
 
 ## Performance & memory notes
 
