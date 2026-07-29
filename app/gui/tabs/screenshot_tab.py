@@ -35,7 +35,7 @@ class ScreenshotTab(ttk.Frame):
         ttkb.Label(toolbar, text="Device Screenshot", font=("Segoe UI", 14, "bold")).pack(side="left")
         self.capture_btn = ttkb.Button(toolbar, text="📷 Capture", bootstyle="success", command=self._capture_once)
         self.capture_btn.pack(side="right", padx=2)
-        self.save_btn = ttkb.Button(toolbar, text="💾 Save As…", bootstyle="secondary-outline", command=self._save, state="disabled")
+        self.save_btn = ttkb.Button(toolbar, text="💾 Save As…", bootstyle="info-outline", command=self._save, state="disabled")
         self.save_btn.pack(side="right", padx=2)
 
         live_bar = ttk.Frame(self)

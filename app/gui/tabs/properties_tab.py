@@ -418,7 +418,7 @@ class PropertiesTab(ttk.Frame):
             toolbar, text="⚡ Fetch Current Values", bootstyle="warning-outline", command=self._fetch_all_values,
         )
         self.fetch_values_btn.pack(side="right", padx=4)
-        ttkb.Button(toolbar, text="⬇ Export All Details", bootstyle="secondary-outline", command=self._export).pack(side="right", padx=4)
+        ttkb.Button(toolbar, text="⬇ Export All Details", bootstyle="info-outline", command=self._export).pack(side="right", padx=4)
 
         self.progress_row = ttk.Frame(self)
         self.progress_label = ttkb.Label(self.progress_row, text="", bootstyle="secondary")

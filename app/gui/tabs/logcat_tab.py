@@ -12,6 +12,7 @@ from tkinter import filedialog, ttk
 from typing import Deque, List, Optional, Tuple
 
 import ttkbootstrap as ttkb
+from ttkbootstrap.dialogs import Messagebox
 
 from app.adb_manager import LogcatStream
 from app.config import config
@@ -92,9 +93,9 @@ class LogcatTab(ttk.Frame):
         self.stop_btn.pack(side="left", padx=4)
         self.pause_btn = ttkb.Button(toolbar, text="⏸ Pause", bootstyle="warning-outline", command=self._toggle_pause)
         self.pause_btn.pack(side="left", padx=4)
-        ttkb.Button(toolbar, text="🗑 Clear", bootstyle="secondary-outline", command=self._clear).pack(side="left", padx=4)
-        ttkb.Button(toolbar, text="💾 Save", bootstyle="secondary-outline", command=self._save).pack(side="left", padx=4)
-        ttkb.Button(toolbar, text="📁 Logs Folder", bootstyle="secondary-outline", command=self._open_logs_folder).pack(side="left", padx=4)
+        ttkb.Button(toolbar, text="🗑 Clear", bootstyle="info-outline", command=self._clear).pack(side="left", padx=4)
+        ttkb.Button(toolbar, text="💾 Save", bootstyle="info-outline", command=self._save).pack(side="left", padx=4)
+        ttkb.Button(toolbar, text="📁 Logs Folder", bootstyle="info-outline", command=self._open_logs_folder).pack(side="left", padx=4)
 
         self.autoscroll_var = tk.BooleanVar(value=True)
         ttkb.Checkbutton(
@@ -178,24 +179,53 @@ class LogcatTab(ttk.Frame):
 
     # -- streaming control -------------------------------------------------
     def _start(self) -> None:
-        if not self.ctx.serial:
-            self.ctx.notify_status("Select a device before starting logcat.", "warning")
-            return
         if self.stream is not None and self.stream.is_running:
             return
+        if not self.ctx.serial:
+            self.ctx.notify_status("Select a device before starting logcat.", "warning")
+            Messagebox.show_warning(
+                "Select a connected device before starting logcat.", title="No device", parent=self.ctx.root,
+            )
+            return
+
+        # Acknowledge the click immediately - disables Start right away so
+        # a double-click can't spawn two processes, and so the click is
+        # visibly registered even before adb has produced any output.
+        self.start_btn.configure(state="disabled")
+        self.ctx.notify_status("Starting logcat…", "info")
+        self.update_idletasks()
+
         tags = [t.strip() for t in self.tags_var.get().split(",") if t.strip()]
         args = build_logcat_args(tags, self.level_var.get())
 
         def on_error(message: str) -> None:
             self.ctx.notify_status(f"logcat error: {message}", "error")
+            Messagebox.show_error(f"Logcat stopped unexpectedly:\n{message}", title="Logcat error", parent=self.ctx.root)
+            self._update_button_states()
 
-        self.stream = self.ctx.adb.start_logcat(self.ctx.serial, extra_args=args, on_error=on_error)
-        self.stream.start()
+        try:
+            self.stream = self.ctx.adb.start_logcat(self.ctx.serial, extra_args=args, on_error=on_error)
+            self.stream.start()
+        except Exception as exc:  # noqa: BLE001 - must never fail silently; a swallowed exception here looks exactly like "the app isn't responding"
+            self.stream = None
+            self.ctx.notify_status(f"Failed to start logcat: {exc}", "error")
+            Messagebox.show_error(f"Could not start logcat:\n{exc}", title="Logcat failed to start", parent=self.ctx.root)
+            self._update_button_states()
+            return
+
+        if not self.stream.is_running:
+            # start() swallowed a spawn failure and reported it through
+            # on_error already (popup shown there) - don't also claim
+            # success or schedule a flush loop that will poll an empty
+            # queue forever.
+            self._update_button_states()
+            return
+
         self.paused = False
         self.pause_btn.configure(text="⏸ Pause")
         self._schedule_flush()
         self._update_button_states()
-        self.ctx.notify_status("Logcat started", "info")
+        self.ctx.notify_status("Logcat started", "success")
 
     def _stop(self) -> None:
         if self.stream is not None:
@@ -288,6 +318,13 @@ class LogcatTab(ttk.Frame):
         if ended:
             self.ctx.notify_status("Logcat stream ended unexpectedly.", "warning")
             self._update_button_states()
+            if self.total_received == 0:
+                Messagebox.show_warning(
+                    "The logcat process ended without producing any output. This usually means "
+                    "adb couldn't reach the device (check the Command Log in Testing for the exact "
+                    "error) or the device disconnected.",
+                    title="Logcat produced no output", parent=self.ctx.root,
+                )
             return
 
         self._schedule_flush()

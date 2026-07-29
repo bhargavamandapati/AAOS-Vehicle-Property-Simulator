@@ -53,7 +53,7 @@ class SettingsTab(ttk.Frame):
         ttkb.Label(adb_frame, text="Override path (optional):").grid(row=1, column=0, sticky="w", pady=(6, 0))
         self.adb_path_var = tk.StringVar(value=config.get("adb_path", ""))
         ttkb.Entry(adb_frame, textvariable=self.adb_path_var).grid(row=1, column=1, sticky="ew", padx=6, pady=(6, 0))
-        ttkb.Button(adb_frame, text="Browse…", bootstyle="secondary-outline", command=self._browse_adb).grid(
+        ttkb.Button(adb_frame, text="Browse…", bootstyle="info-outline", command=self._browse_adb).grid(
             row=1, column=2, padx=4, pady=(6, 0)
         )
 
@@ -61,8 +61,8 @@ class SettingsTab(ttk.Frame):
         button_row.grid(row=2, column=0, columnspan=3, sticky="w", pady=(8, 0))
         ttkb.Button(button_row, text="Apply & Re-detect", bootstyle="success-outline", command=self._apply_adb_path).pack(side="left", padx=2)
         ttkb.Button(button_row, text="Restart ADB Server", bootstyle="warning-outline", command=self._restart_server).pack(side="left", padx=2)
-        ttkb.Button(button_row, text="Open Config Folder", bootstyle="secondary-outline", command=self._open_config_folder).pack(side="left", padx=2)
-        ttkb.Button(button_row, text="Open Logs Folder", bootstyle="secondary-outline", command=self._open_logs_folder).pack(side="left", padx=2)
+        ttkb.Button(button_row, text="Open Config Folder", bootstyle="info-outline", command=self._open_config_folder).pack(side="left", padx=2)
+        ttkb.Button(button_row, text="Open Logs Folder", bootstyle="info-outline", command=self._open_logs_folder).pack(side="left", padx=2)
         self.adb_status_label = ttkb.Label(adb_frame, text="", bootstyle="secondary")
         self.adb_status_label.grid(row=3, column=0, columnspan=3, sticky="w", pady=(4, 0))
         ttkb.Label(

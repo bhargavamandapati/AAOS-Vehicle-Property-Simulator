@@ -72,7 +72,7 @@ class MainWindow:
         # or a label on the left grows long, it is the flexible label
         # that gets truncated, never the Settings button.
         ttkb.Button(
-            topbar, text="⚙ Settings", bootstyle="secondary-outline",
+            topbar, text="⚙ Settings", bootstyle="info-outline",
             command=lambda: self.notebook.select(self.settings_tab),
         ).pack(side="right")
 

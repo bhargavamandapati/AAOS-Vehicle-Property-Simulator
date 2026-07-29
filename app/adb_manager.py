@@ -171,6 +171,10 @@ class AdbManager:
 
     # -- low level -----------------------------------------------------
     def _run(self, args: List[str], timeout: Optional[float] = 15) -> CommandResult:
+        # stdin=DEVNULL everywhere we spawn adb: without it the child
+        # inherits whatever (possibly invalid, e.g. when launched via
+        # pythonw with no console) stdin handle this process has, which on
+        # Windows can make process creation itself fail unpredictably.
         command_str = " ".join(args)
         start = time.monotonic()
         try:
@@ -180,6 +184,7 @@ class AdbManager:
                 text=True,
                 timeout=timeout,
                 creationflags=_CREATIONFLAGS,
+                stdin=subprocess.DEVNULL,
             )
             result = CommandResult(proc.returncode, proc.stdout, proc.stderr)
             duration_ms = (time.monotonic() - start) * 1000
@@ -257,6 +262,7 @@ class AdbManager:
         try:
             proc = subprocess.run(
                 args, capture_output=True, timeout=timeout, creationflags=_CREATIONFLAGS,
+                stdin=subprocess.DEVNULL,
             )
         except FileNotFoundError as exc:
             command_logger.record(command_str, False, (time.monotonic() - start) * 1000, str(exc))
@@ -324,6 +330,7 @@ class LogcatStream:
         try:
             self._process = subprocess.Popen(
                 args,
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -331,9 +338,15 @@ class LogcatStream:
                 errors="replace",
                 creationflags=_CREATIONFLAGS,
             )
-        except FileNotFoundError as exc:
+        except OSError as exc:
+            # Broader than just FileNotFoundError: process creation itself
+            # can fail for other OS-level reasons (e.g. a bad inherited
+            # handle) - any of these must reach the caller's error
+            # handling, not vanish silently.
             if self._on_error:
                 self._on_error(str(exc))
+            else:
+                raise
             return
         self._stop_event.clear()
         self._reader_thread = threading.Thread(target=self._read_loop, daemon=True)

@@ -156,9 +156,9 @@ class ScenarioPanel(ttk.Frame):
         self.scenario_combo.pack(side="left", padx=(4, 12))
         self.scenario_combo.bind("<<ComboboxSelected>>", self._on_scenario_pick)
 
-        ttkb.Button(top, text="New", bootstyle="secondary-outline", command=self._new_scenario).pack(side="left", padx=2)
-        ttkb.Button(top, text="Load…", bootstyle="secondary-outline", command=self._load_from_file).pack(side="left", padx=2)
-        ttkb.Button(top, text="Save…", bootstyle="secondary-outline", command=self._save_to_file).pack(side="left", padx=2)
+        ttkb.Button(top, text="New", bootstyle="info-outline", command=self._new_scenario).pack(side="left", padx=2)
+        ttkb.Button(top, text="Load…", bootstyle="info-outline", command=self._load_from_file).pack(side="left", padx=2)
+        ttkb.Button(top, text="Save…", bootstyle="info-outline", command=self._save_to_file).pack(side="left", padx=2)
 
         self.run_btn = ttkb.Button(top, text="▶ Run", bootstyle="success", command=self._run)
         self.run_btn.pack(side="right", padx=2)
@@ -415,7 +415,7 @@ class MonitorPanel(ttk.Frame):
         self.prop_combo = ttkb.Combobox(top, textvariable=self.prop_var, width=26)
         self.prop_combo.pack(side="left", padx=4)
         ttkb.Button(top, text="+ Watch", bootstyle="info-outline", command=self._add_watch).pack(side="left", padx=4)
-        ttkb.Button(top, text="Clear Watches", bootstyle="secondary-outline", command=self._clear_watches).pack(side="left", padx=4)
+        ttkb.Button(top, text="Clear Watches", bootstyle="info-outline", command=self._clear_watches).pack(side="left", padx=4)
 
         ttkb.Label(top, text="Interval (s):").pack(side="left", padx=(16, 4))
         self.interval_var = tk.StringVar(value="2")
@@ -615,8 +615,8 @@ class CommandLogPanel(ttk.Frame):
         toolbar = ttk.Frame(self)
         toolbar.pack(fill="x", pady=(0, 6))
         ttkb.Label(toolbar, text="ADB Request / Response Log", font=("Segoe UI", 12, "bold")).pack(side="left")
-        ttkb.Button(toolbar, text="📁 Open Logs Folder", bootstyle="secondary-outline", command=self._open_folder).pack(side="right", padx=2)
-        ttkb.Button(toolbar, text="⬇ Export", bootstyle="secondary-outline", command=self._export).pack(side="right", padx=2)
+        ttkb.Button(toolbar, text="📁 Open Logs Folder", bootstyle="info-outline", command=self._open_folder).pack(side="right", padx=2)
+        ttkb.Button(toolbar, text="⬇ Export", bootstyle="info-outline", command=self._export).pack(side="right", padx=2)
         ttkb.Button(toolbar, text="🗑 Clear View", bootstyle="danger-outline", command=self._clear).pack(side="right", padx=2)
 
         ttkb.Label(

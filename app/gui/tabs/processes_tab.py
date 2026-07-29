@@ -40,7 +40,7 @@ class ProcessesTab(ttk.Frame):
         toolbar = ttk.Frame(self)
         toolbar.pack(fill="x", pady=(0, 6))
         ttkb.Label(toolbar, text="Running Processes", font=("Segoe UI", 14, "bold")).pack(side="left")
-        self.export_btn = ttkb.Button(toolbar, text="⬇ Export", bootstyle="secondary-outline", command=self._export)
+        self.export_btn = ttkb.Button(toolbar, text="⬇ Export", bootstyle="info-outline", command=self._export)
         self.export_btn.pack(side="right", padx=2)
         self.refresh_btn = ttkb.Button(toolbar, text="⟳ Refresh", bootstyle="info-outline", command=self._manual_refresh)
         self.refresh_btn.pack(side="right", padx=2)
