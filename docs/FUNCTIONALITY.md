@@ -157,6 +157,54 @@ Five sub-tabs, all sharing the same device connection:
   interval.
 - **Export** - same 5 formats as All Properties.
 
+## APK Install
+
+Three sub-tabs, covering the range of ways an APK ends up on a test
+device - from a plain user-space install to a system/product overlay
+that needs root, a remounted partition, and a reboot to take effect:
+
+- **Quick Install** - browse for one APK (or several, for a split
+  install - `install-multiple` is used automatically when more than one
+  file is picked), toggle the standard `pm install` flags (`-r` replace
+  existing, `-g` grant all runtime permissions, `-t` allow test APKs,
+  `-d` allow version downgrade), see the exact `adb install ...` command
+  it will run before you run it, and get a scrollable pass/fail result
+  with the device's raw output. This covers the common case: installing
+  a normal app APK, no root required.
+- **Push & System Workflow** - for APKs that must land in a system
+  partition instead of being installed normally (RRO overlays,
+  priv-app APKs, vendor APKs):
+  - Add one or more entries (local file, target path - with presets for
+    `/system/app/`, `/system/priv-app/`, `/system/overlay/`,
+    `/product/app/`, `/product/priv-app/`, `/product/overlay/`,
+    `/vendor/app/`, `/vendor/overlay/`, `/system_ext/{app,priv-app,overlay}/`,
+    and an optional package name used only for the overlay-enable step).
+  - Choose which workflow steps to run: **Root** (`adb root`),
+    **Remount** `/system` read-write (`adb remount`), **Push** each
+    entry (`adb push`), **chmod 644** the pushed files, **Reboot**
+    (`adb reboot`), **Wait for device** to come back online, and
+    optionally **Enable overlay** (`cmd overlay enable <package>`) once
+    it's back. A "stop on first failure" toggle decides whether a failed
+    step (e.g. `adb root` not supported on a `user` build) aborts the
+    rest of the run or the app pushes ahead anyway.
+  - **Run** executes the steps in order in the background, updating a
+    live Steps table (pass/fail/running, with the device's output for
+    each step) as it goes - never one opaque blocking call. **Stop**
+    halts before the next step starts.
+  - A separate **"⚠ Disable Verity & Reboot…"** button is deliberately
+    *not* part of the automatic workflow - see
+    [WORKING_PROCESS.md](WORKING_PROCESS.md#push-and-system-workflow-design)
+    for why `disable-verity` is kept manual, behind its own
+    confirmation dialog.
+- **Packages & Overlays** - **Installed Packages**: list packages
+  (`pm list packages`, scoped to All / Third-party only (`-3`) / System
+  only (`-s`)) with a search filter and an **Uninstall Selected** button
+  (confirmation dialog first, with an optional "keep data" checkbox).
+  **RRO Overlays**: list overlays (`cmd overlay list`, parsed into
+  package / enabled state / target package) and **Enable/Disable
+  Selected** - the fast path for iterating on an already-pushed overlay
+  without repeating the whole push workflow.
+
 ## Settings
 
 - **ADB Connection** - detected path, an override (with a file
@@ -172,5 +220,18 @@ Five sub-tabs, all sharing the same device connection:
   exists because that sub-command syntax genuinely differs across
   AAOS releases/OEM builds - see
   [WORKING_PROCESS.md](WORKING_PROCESS.md#command-templates-are-not-hardcoded).
-- **About** - version and a reminder that property IDs are always read
-  live from the device, never hard-coded.
+- **About** - a pointer to the dedicated ℹ️ About tab, below, for the
+  full version string and developer info.
+
+## About
+
+- **Version** - the base version (manually maintained), the build
+  metadata (commit count, short hash, and a "dirty" flag if there are
+  uncommitted changes), and the two combined into one copyable full
+  version string (e.g. `1.0.0+245.ab12cd3`) - a **Copy Version Info**
+  button puts it straight on the clipboard, ready to paste into a bug
+  report so there's never any ambiguity about which build was tested.
+  Generated live from git on every launch - see
+  [WORKING_PROCESS.md](WORKING_PROCESS.md#git-derived-versioning).
+- **Developer** - credited as Bhargava Mandapati, with a clickable link
+  to the project's GitHub repository.

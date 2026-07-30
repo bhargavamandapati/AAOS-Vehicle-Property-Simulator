@@ -126,16 +126,18 @@ class SettingsTab(ttk.Frame):
         ttkb.Button(cmd_buttons, text="Save Templates", bootstyle="success-outline", command=self._save_templates).pack(side="left", padx=2)
         ttkb.Button(cmd_buttons, text="Reset to Defaults", bootstyle="danger-outline", command=self._reset_templates).pack(side="left", padx=2)
 
-        # -- About --------------------------------------------------------
+        # -- About ----------------------------------------------------------
         about_frame = ttkb.Labelframe(root, text="About", padding=10, bootstyle="primary")
         about_frame.pack(fill="x", padx=4, pady=6)
-        ttkb.Label(about_frame, text=f"AAOS Vehicle Property Simulator v{__version__}", font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        ttkb.Label(
+            about_frame, text=f"AAOS Vehicle Property Simulator v{__version__}",
+            font=("Segoe UI", 10, "bold"),
+        ).pack(anchor="w")
         ttkb.Label(
             about_frame,
-            text="A development/testing tool that drives Android Automotive OS vehicle properties over ADB. "
-                 "Property IDs are always read live from the connected device - nothing is hard-coded - so "
-                 "behavior depends on what your build/VHAL implementation actually exposes.",
-            bootstyle="secondary", wraplength=760, justify="left",
+            text="See the ℹ️ About tab for developer info, the full auto-generated build "
+                 "version, and a copyable version string for bug reports.",
+            bootstyle="secondary",
         ).pack(anchor="w", pady=(4, 0))
 
     # -- handlers -----------------------------------------------------------

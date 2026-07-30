@@ -279,6 +279,58 @@ class AdbManager:
             raise AdbError(proc.stderr.decode(errors="replace").strip() or "screencap returned no data")
         return proc.stdout
 
+    # -- packages / system partition (install, push, root/remount/reboot) --
+    def install(self, serial: str, apk_paths: List[str], flags: Optional[List[str]] = None, timeout: float = 120) -> CommandResult:
+        """`adb install <flags> <apk>` for one APK, or
+        `adb install-multiple <flags> <apks...>` for a split-APK bundle
+        (more than one path). Timeout defaults high - installs can be
+        slow on first run (dexopt) or over a slow USB connection."""
+        adb = self._require_adb()
+        flags = flags or []
+        if len(apk_paths) > 1:
+            return self._run([adb, "-s", serial, "install-multiple", *flags, *apk_paths], timeout=timeout)
+        return self._run([adb, "-s", serial, "install", *flags, *apk_paths], timeout=timeout)
+
+    def uninstall(self, serial: str, package: str, keep_data: bool = False, timeout: float = 60) -> CommandResult:
+        adb = self._require_adb()
+        flags = ["-k"] if keep_data else []
+        return self._run([adb, "-s", serial, "uninstall", *flags, package], timeout=timeout)
+
+    def push(self, serial: str, local_path: str, remote_path: str, timeout: float = 120) -> CommandResult:
+        adb = self._require_adb()
+        return self._run([adb, "-s", serial, "push", local_path, remote_path], timeout=timeout)
+
+    def root(self, serial: str, timeout: float = 20) -> CommandResult:
+        """Restarts adbd on the device with root permissions (only works
+        on userdebug/eng builds - a "user" build will reject this)."""
+        adb = self._require_adb()
+        return self._run([adb, "-s", serial, "root"], timeout=timeout)
+
+    def remount(self, serial: str, timeout: float = 30) -> CommandResult:
+        """Remounts /system (and /vendor, /product, ...) read-write.
+        Requires root first. On a device with dm-verity enabled this
+        will fail with a message telling you to `disable-verity` and
+        reboot first - that response is surfaced to the caller as-is
+        rather than guessed at, since whether verity is even relevant
+        depends entirely on the build."""
+        adb = self._require_adb()
+        return self._run([adb, "-s", serial, "remount"], timeout=timeout)
+
+    def disable_verity(self, serial: str, timeout: float = 30) -> CommandResult:
+        adb = self._require_adb()
+        return self._run([adb, "-s", serial, "disable-verity"], timeout=timeout)
+
+    def reboot(self, serial: str, timeout: float = 20) -> CommandResult:
+        adb = self._require_adb()
+        return self._run([adb, "-s", serial, "reboot"], timeout=timeout)
+
+    def wait_for_device(self, serial: str, timeout: float = 120) -> CommandResult:
+        """Blocks until the device is back and responsive after a
+        reboot. Run this on a background thread - it can legitimately
+        take a couple of minutes on real hardware."""
+        adb = self._require_adb()
+        return self._run([adb, "-s", serial, "wait-for-device"], timeout=timeout)
+
     # -- logcat ------------------------------------------------------------
     def clear_logcat(self, serial: str) -> CommandResult:
         adb = self._require_adb()

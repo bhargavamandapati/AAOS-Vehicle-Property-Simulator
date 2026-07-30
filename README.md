@@ -119,13 +119,34 @@ internal working-process writeups.
   dirty, ...) with a quick-glance summary line. "Live updates" refreshes
   both the list and whichever process is currently selected, at a chosen
   interval. Exportable in the same 5 formats as Properties.
+- **APK Install tab** - three ways to get an APK onto the device:
+  - **Quick Install** - standard `adb install` (or `install-multiple` for
+    a split-APK bundle) with the usual `-r`/`-g`/`-t`/`-d` flags and a
+    live command preview.
+  - **Push & System Workflow** - for privileged/system apps and RRO
+    (Runtime Resource Overlay) APKs that can't be installed normally:
+    root the device, remount `/system` read-write, push one or more
+    APKs to a chosen system path (presets for `/product/overlay/`,
+    `/system/priv-app/`, `/vendor/overlay/`, ...), optionally `chmod`,
+    reboot, wait for the device to come back, and optionally enable the
+    resulting overlay - each step run sequentially with live PASS/FAIL
+    status, stoppable mid-run. A separate, confirmation-gated
+    "Disable Verity & Reboot" utility for builds where a plain
+    `remount` isn't enough on its own.
+  - **Packages & Overlays** - `pm list packages` (search, uninstall) and
+    `cmd overlay list` (enable/disable) to verify the result.
 - **Settings tab** - ADB path override, theme picker, logcat buffer size
   and poll intervals, editable command templates (see below), and quick
   links to the config/logs folders.
+- **About tab** - developer credit and a version string that's generated
+  automatically from your git checkout (commit count + short hash, e.g.
+  `1.0.0+42.ab12cd3`) rather than hand-maintained, plus a "Copy Version
+  Info" button for bug reports.
 - **Loaders and popups** - long operations (property scans, bulk value
-  fetches, scenario runs) show a progress indicator instead of freezing
-  silently, and key actions (exports, fetch completion, blocked actions)
-  confirm with a dialog rather than an easy-to-miss status line.
+  fetches, scenario runs, push workflows) show a progress indicator
+  instead of freezing silently, and key actions (exports, fetch
+  completion, blocked actions, startup failures) confirm with a dialog
+  rather than an easy-to-miss status line.
 
 ## Logging
 
@@ -204,6 +225,11 @@ defensively around that fact:
   device.
 - When something doesn't work as expected, the **Testing → Raw ADB Shell**
   panel lets you run any `adb shell` command directly for troubleshooting.
+- This caveat is specifically about `cmd car_service ...` and
+  `dumpsys car_service`. The **APK Install** tab's commands
+  (`install`, `push`, `root`, `remount`, `reboot`, `pm`,
+  `cmd overlay ...`) are standard AOSP platform-tools behavior, stable
+  across Android versions - not something you should need to edit.
 
 ## Documentation
 
@@ -223,18 +249,20 @@ For more depth than this README, see **[docs/](docs/)**:
 ```
 main.py                     entry point
 app/
-  adb_manager.py            adb discovery, device scan, shell exec, logcat streaming, screenshot capture
+  adb_manager.py            adb discovery, device scan, shell exec, logcat streaming, screenshot capture, install/push/root/remount/reboot
   car_service.py             dumpsys car_service parsing + get/set/inject commands
   property_registry.py       curated "known" properties for the Dashboard (matched by name)
   device_tools.py             ps / dumpsys meminfo parsing for the Processes tab
+  apk_tools.py                 pm list packages / cmd overlay list parsing for the APK Install tab
   export_utils.py             shared CSV/JSON/XML/HTML/Excel exporter
   command_log.py              in-memory ADB request/response log (Testing -> Command Log)
   persistent_log.py           continuous rotating file logs (adb commands + logcat)
   config.py                   persistent settings (JSON, under the OS user config dir)
+  version.py                  git-derived build version (see docs/WORKING_PROCESS.md)
   gui/
     main_window.py            top bar (device selector) + tab notebook + status bar
     context.py                 shared app state passed to every tab
-    tabs/                      dashboard, properties, logcat, testing, screenshot, processes, settings
+    tabs/                      dashboard, properties, logcat, testing, screenshot, processes, apk_install, settings, about
   utils/                       background-thread helpers + small filesystem helpers
 data/vehicle_property_enums.json   best-effort enum decode table (editable)
 tests/                        unit tests for the parsers/managers (no device/adb required)
@@ -250,7 +278,8 @@ python -m pytest
 
 The test suite covers every parser and exporter (`dumpsys` output, the
 device list, `ps`/`dumpsys meminfo`, `get-property-value` responses,
-CSV/JSON/XML/HTML/Excel export, the area/value decoration helpers) and
+`pm list packages`/`cmd overlay list`, CSV/JSON/XML/HTML/Excel export,
+the area/value decoration helpers, git-derived version formatting) and
 the Dashboard's name-based matching logic - all pure functions, so no
 adb binary or attached device is required to run them. Several fixtures
 are captured verbatim from a real AAOS emulator rather than invented, to

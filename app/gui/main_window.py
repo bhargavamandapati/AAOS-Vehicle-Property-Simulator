@@ -11,6 +11,8 @@ from app.adb_manager import DeviceInfo, adb_manager
 from app.car_service import CarServiceClient
 from app.config import config
 from app.gui.context import AppContext
+from app.gui.tabs.about_tab import AboutTab
+from app.gui.tabs.apk_install_tab import ApkInstallTab
 from app.gui.tabs.dashboard_tab import DashboardTab
 from app.gui.tabs.logcat_tab import LogcatTab
 from app.gui.tabs.processes_tab import ProcessesTab
@@ -114,8 +116,14 @@ class MainWindow:
         self.processes_tab = ProcessesTab(self.notebook, self.ctx)
         self.notebook.add(self.processes_tab, text=f"{TAB_ICONS['processes']}Processes")
 
+        self.apk_install_tab = ApkInstallTab(self.notebook, self.ctx)
+        self.notebook.add(self.apk_install_tab, text=f"{TAB_ICONS['apk_install']}APK Install")
+
         self.settings_tab = SettingsTab(self.notebook, self.ctx, self.style)
         self.notebook.add(self.settings_tab, text=f"{TAB_ICONS['settings']}Settings")
+
+        self.about_tab = AboutTab(self.notebook, self.ctx)
+        self.notebook.add(self.about_tab, text=f"{TAB_ICONS['about']}About")
 
         ttk.Separator(self.root, orient="horizontal").pack(fill="x", side="bottom")
         statusbar = ttkb.Frame(self.root, padding=(12, 4))
@@ -277,6 +285,7 @@ class MainWindow:
             self.testing_tab.shutdown()
             self.screenshot_tab.shutdown()
             self.processes_tab.shutdown()
+            self.apk_install_tab.shutdown()
             config.save()
         finally:
             self.root.destroy()

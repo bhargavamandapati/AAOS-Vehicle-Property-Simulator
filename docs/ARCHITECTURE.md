@@ -8,12 +8,14 @@ The app is split into two layers that never leak into each other:
 app/
   adb_manager.py        \
   car_service.py          |
-  property_registry.py    |  Backend - no tkinter imports anywhere,
-  config.py                |  unit-testable headlessly (see tests/),
-  command_log.py            |  safe to import without a display attached
-  persistent_log.py         |
+  property_registry.py    |
+  config.py                |  Backend - no tkinter imports anywhere,
+  command_log.py            |  unit-testable headlessly (see tests/),
+  persistent_log.py         |  safe to import without a display attached
   export_utils.py           |
-  device_tools.py         /
+  device_tools.py           |
+  apk_tools.py               |
+  version.py               /
 
   gui/
     main_window.py        \
@@ -58,6 +60,25 @@ testable with plain `pytest` and no Tk/display required; every file in
   It always returns dataclasses to the GUI layer, never raw text to
   parse twice.
 
+- **`app/apk_tools.py`** - pure-function helpers behind the APK Install
+  tab: `PUSH_TARGET_PRESETS` (the standard system partition install
+  directories), `suggest_target_path`, `parse_package_list` (`pm list
+  packages` output), `parse_overlay_list` (`cmd overlay list` output,
+  tolerant of the "target package header + indented `[x]`/`[ ]` lines"
+  layout), and `build_install_flags`. None of it shells out to `adb`
+  itself - `AdbManager` and `PushWorkflowRunner` do that and hand this
+  module raw text to parse, keeping the parsing logic independently
+  testable the same way `car_service.py`'s parsers are.
+
+- **`app/version.py`** - derives the version string shown in the About
+  tab. `BASE_VERSION` is the one manually-maintained value (in
+  `app/__init__.py`); everything else - commit count, short hash, dirty
+  flag - is read live from git via `git rev-list --count HEAD`,
+  `git rev-parse --short HEAD`, and `git status --porcelain`, cached
+  with `@lru_cache` so it only shells out once per run. See
+  [WORKING_PROCESS.md](WORKING_PROCESS.md#git-derived-versioning) for
+  why it's computed instead of hand-bumped.
+
 - **`AppContext`** (`app/gui/context.py`) - the one object every tab
   receives in its constructor. It holds the current device, the current
   property list, and a small pub/sub mechanism:
@@ -96,6 +117,31 @@ background thread via one of two helpers in `app/utils/workers.py`:
   updates, Testing → Live Monitor) - it's what guarantees a
   slow/unresponsive device can never stack up overlapping background
   threads or `adb` processes.
+
+## Sequential background workflows
+
+Two features need to run an ordered list of steps in the background,
+report each step's status as it happens, and be stoppable mid-run:
+Testing's Scenario Runner (`testing_tab.py`) and APK Install's
+`PushWorkflowRunner` (`apk_install_tab.py`). Both follow the same
+shape rather than sharing a base class, since the step types and error
+handling differ enough that a shared abstraction would mostly be
+indirection:
+
+- `build_steps()` turns the current UI state (checked options, the
+  entry list) into an ordered list of `(label, step_fn)` pairs.
+- `run()` executes them one at a time on a background thread, putting
+  `(status, index, label, detail)` tuples onto a `queue.Queue` after
+  each step - `"running"` immediately before, then `"pass"`/`"fail"`.
+  The GUI thread drains the queue on a `root.after` poll loop and
+  updates a `Treeview` row per step, so the whole run is visible
+  progressing live rather than appearing as one opaque blocking call.
+- A `stop_on_failure` flag (and a manual Stop button, checked between
+  steps) lets the run halt early instead of ploughing through
+  irrelevant steps after e.g. `adb root` fails.
+
+See [WORKING_PROCESS.md](WORKING_PROCESS.md#push-and-system-workflow-design)
+for why the push workflow's steps are ordered the way they are.
 
 ## Data flow: a Set action, end to end
 
@@ -157,7 +203,9 @@ git checkout never carries any user state:
 | Testing | `app/gui/tabs/testing_tab.py` | Scenario Runner, Snapshot Diff, Live Monitor, Raw ADB Shell, Command Log |
 | Screenshot | `app/gui/tabs/screenshot_tab.py` | - |
 | Processes | `app/gui/tabs/processes_tab.py` | - |
+| APK Install | `app/gui/tabs/apk_install_tab.py` | Quick Install, Push & System Workflow, Packages & Overlays |
 | Settings | `app/gui/tabs/settings_tab.py` | - |
+| About | `app/gui/tabs/about_tab.py` | - |
 
 ## Testing strategy
 

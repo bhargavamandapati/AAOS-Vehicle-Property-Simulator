@@ -70,5 +70,7 @@ TAB_ICONS = {
     "testing": "\U0001F9EA ",
     "screenshot": "\U0001F4F7 ",
     "processes": "\U0001F4CA ",
+    "apk_install": "\U0001F4E6 ",
     "settings": "⚙ ",
+    "about": "ℹ️ ",
 }

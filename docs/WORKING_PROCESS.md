@@ -222,6 +222,87 @@ Pss/Private-Dirty/Private-Clean/Swap/Rss numbers out of
 dump is always shown as-is underneath, so a regex miss on the summary
 never hides information, only the one summary line.
 
+## Git-derived versioning
+
+The About tab's version string is deliberately **not** a single number
+bumped by hand on release. `app/version.py` combines two things:
+
+- `BASE_VERSION` (from `app/__init__.py`) - the one manually-maintained
+  piece, a normal semver like `1.0.0`.
+- Build metadata read live from git: `git rev-list --count HEAD`
+  (commit count), `git rev-parse --short HEAD` (short hash), and
+  whether `git status --porcelain` reports anything (a `.dirty` suffix
+  if so) - combined into `1.0.0+245.ab12cd3` or `1.0.0+245.ab12cd3.dirty`.
+
+The reasoning: `BASE_VERSION` alone can't distinguish "the exact commit
+someone tested against" - two people both running "1.0.0" off different
+commits (one with an uncommitted local fix) is exactly the kind of
+ambiguity that makes a bug report hard to act on. Appending the commit
+count + hash makes every build's version effectively unique without
+needing a release process to generate it. All three `git` calls are
+wrapped in `_run_git()`, which returns `None` on *any* failure -
+git not installed, running from a source zip with no `.git` directory,
+a shallow clone missing history for `rev-list --count` - and
+`format_version()` falls back to the bare `BASE_VERSION` in that case,
+so a missing git toolchain degrades gracefully instead of crashing the
+About tab. The whole thing is wrapped in `@lru_cache(maxsize=1)` since
+it shells out to git 3 times and the answer can't change within a
+single run of the app.
+
+## Push and system workflow design
+
+The APK Install tab's Push & System Workflow exists because "install an
+APK" and "get an RRO overlay or a priv-app APK onto the system
+partition" are fundamentally different operations - the latter needs
+root, a writable `/system`, and a reboot before the change takes
+effect, and getting the order wrong either fails outright or produces a
+device that silently didn't pick up the change. `PushWorkflowRunner`
+(see [ARCHITECTURE.md](ARCHITECTURE.md#sequential-background-workflows)
+for the runner shape it shares with the Scenario Runner) fixes the step
+order to: **root → remount → push (each entry) → chmod 644 → reboot →
+wait for device → optionally enable overlay**. A few choices worth
+calling out:
+
+- **`adb disable-verity` is a separate, manually-triggered button, not
+  a workflow step.** Disabling dm-verity is a more invasive, less
+  reversible action than a plain remount (it changes how the device
+  verifies its system partition on every future boot, not just this
+  session), so it's deliberately kept out of the default automatic
+  path and behind its own confirmation dialog
+  (`Messagebox.yesno(..., localize=False)` - `localize=False` matters
+  because the dialog's return value is compared against the literal
+  string `"Yes"`, and localization would silently break that comparison
+  on a non-English Windows install). A user who needs it reaches for it
+  on purpose, rather than every push workflow disabling verity by
+  default "just in case".
+- **`pm list packages` and `cmd overlay list` parsing is tolerant by
+  the same principle as the dumpsys parser** (see above) - `cmd overlay
+  list`'s format (a target-package header line followed by indented
+  `[x]`/`[ ]` entries) is parsed by tracking "the nearest preceding
+  non-indented line" as the target package rather than assuming a fixed
+  grouping syntax, so a differently-formatted build degrades to "some
+  overlays not grouped correctly" rather than a crash.
+- **Every step is stoppable and independently visible** (via the same
+  queue-drain-to-Treeview mechanism as the Scenario Runner) rather than
+  one blocking multi-minute call, because push workflows are exactly
+  the kind of multi-step process where "which step failed" matters far
+  more than "did it succeed" - `adb root` failing on a `user` build
+  needs a different fix than a push failing because `/system` wasn't
+  actually remounted read-write.
+
+One bug from building this panel is worth naming since it's a trap any
+`ScrollableFrame`-wrapped panel can fall into: an early draft of
+`PushWorkflowPanel._build_ui()` reassigned `self = scroll.inner` to
+save typing `content.` as the parent for every widget - which silently
+broke every subsequent `self.xxx = widget` attribute assignment in the
+same method, since they were now setting attributes on the scroll
+frame instead of the panel instance. It didn't raise an exception; it
+just rendered a visually broken panel (the Steps table showed as a
+near-invisible sliver), caught only by comparing an actual screenshot
+against expectations. Fixed by keeping `self` untouched and using a
+separately-named `content` variable purely as the widget-parent
+argument.
+
 ## Multi-format export
 
 `app/export_utils.py::export_rows()` is the one exporter every "Export"
