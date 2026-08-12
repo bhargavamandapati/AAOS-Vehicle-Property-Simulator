@@ -7,6 +7,8 @@ every property the connected device supports, watch filtered/colored
 (via [ttkbootstrap](https://ttkbootstrap.readthedocs.io/)) so it runs the
 same way on Windows and Linux.
 
+Medium Article : https://medium.com/@bhargavamandapati/i-built-a-gui-simulator-for-android-automotive-os-vehicle-properties-then-a-real-emulator-told-me-90051ffb3818
+
 ## Screenshots
 
 <table>
